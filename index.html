@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <title>Gravar Receita</title>
+</head>
+<body>
+  <h2>🎤 Criar Receita por Voz</h2>
+  <p id="statusText">Clique em "Gravar", fale normalmente e depois clique em "Parar" para enviar.</p>
+  <button id="gravarBtn">▶️ Gravar</button>
+  <button id="pararBtn" disabled>⏹️ Parar</button>
+
+  <script>
+    const status = document.getElementById("statusText");
+    const gravarBtn = document.getElementById("gravarBtn");
+    const pararBtn = document.getElementById("pararBtn");
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      status.textContent = "🚫 Este navegador não suporta reconhecimento de voz.";
+      gravarBtn.disabled = true;
+      pararBtn.disabled = true;
+    } else {
+      let recognition = null;
+
+      const iniciarReconhecimento = () => {
+        recognition = new SpeechRecognition();
+        recognition.lang = "pt-PT";
+        recognition.interimResults = false;
+        recognition.continuous = true;
+
+        recognition.onresult = (event) => {
+          const texto = Array.from(event.results)
+            .map(result => result[0].transcript)
+            .join(' ');
+
+          status.textContent = `✅ Gravado: "${texto}"`;
+
+          const makeWebhook = "https://hook.eu2.make.com/2hc9du70jmj94rkpbfh81fgawjtae1x3";
+          const dados = {
+            textoReconhecido: texto,
+            origem: "pagina-externa"
+          };
+
+          fetch(makeWebhook, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify(dados)
+          })
+          .then(response => {
+            if (response.ok) {
+              status.textContent += " 🚀 Enviado com sucesso!";
+            } else {
+              status.textContent += ` ❌ Erro ao enviar: ${response.statusText}`;
+            }
+          })
+          .catch(error => {
+            status.textContent += ` ❌ Falha de envio: ${error}`;
+          });
+        };
+
+        recognition.onerror = (event) => {
+          status.textContent = `❌ Erro no reconhecimento: ${event.error}`;
+          gravarBtn.disabled = false;
+          pararBtn.disabled = true;
+        };
+      };
+
+      gravarBtn.onclick = () => {
+        iniciarReconhecimento();
+        recognition.start();
+        status.textContent = "🎙️ A gravar... fale à vontade e clique em 'Parar' quando terminar.";
+        gravarBtn.disabled = true;
+        pararBtn.disabled = false;
+      };
+
+      pararBtn.onclick = () => {
+        if (recognition) {
+          recognition.stop();
+          status.textContent = "🛑 A gravar foi interrompida, a processar...";
+          gravarBtn.disabled = false;
+          pararBtn.disabled = true;
+        }
+      };
+    }
+  </script>
+</body>
+</html>

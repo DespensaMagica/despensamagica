@@ -1,0 +1,10 @@
+[functions]
+directory = "netlify/functions"
+
+[build]
+  publish = "."
+  
+[[redirects]]
+  from = "/api/recebertexto"
+  to = "/.netlify/functions/recebertexto"
+  status = 200
